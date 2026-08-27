@@ -12,6 +12,7 @@ import { StackChoiceView } from "./pages/StackChoice/StackChoiceView";
 import { Fl05View } from "./pages/Fl05/Fl05View";
 import { WorkflowView } from "./pages/Workflow/WorkflowView";
 import { ExplainView } from "./pages/Explain/ExplainView";
+import { AgentSpecView } from "./pages/AgentSpec/AgentSpecView";
 import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
 import { AiPanel } from "./components/AiPanel/AiPanel";
 import { useState, useEffect } from "react";
@@ -69,6 +70,7 @@ function AppShell() {
           <Route path="/fl05" element={<Fl05View />} />
           <Route path="/mcp" element={<Fl05View />} />
           <Route path="/explain" element={<ExplainView />} />
+          <Route path="/agent" element={<AgentSpecView />} />
           <Route path="/NOTES.md" element={<PlaygroundView />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

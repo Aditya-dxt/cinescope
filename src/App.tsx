@@ -5,6 +5,7 @@ import { FavouritesView } from "./pages/Favourites/FavouritesView";
 import { AuthView } from "./pages/Auth/AuthView";
 import { HealthView } from "./pages/Health/HealthView";
 import { Week03View } from "./pages/Week03/Week03View";
+import { LaunchPlanView } from "./pages/LaunchPlan/LaunchPlanView";
 import { useState, useEffect } from "react";
 
 // Lift search state so Header and Home share it
@@ -51,6 +52,8 @@ function AppShell() {
           <Route path="/health" element={<HealthView />} />
           <Route path="/week03" element={<Week03View />} />
           <Route path="/identity" element={<Week03View />} />
+          <Route path="/next-case" element={<LaunchPlanView />} />
+          <Route path="/launch-plan" element={<LaunchPlanView />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

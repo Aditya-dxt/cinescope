@@ -3,7 +3,7 @@
 Independent React app for **FlyRank AI Internship — Frontend AI Engineering (Week 3)**
 Track: *React app development with AI* — built with AI as a development assistant.
 
-Live: _(add Vercel URL after deploy)_ · Repo: `Aditya-dxt/cinescope`
+Live: https://cinescope-phi-ebon.vercel.app · Repo: `Aditya-dxt/cinescope`  (also https://cinescope-aditya-dixits-projects-06f0b598.vercel.app)
 
 Reference session: Ishak — *React Frontend Development with AI: From Prompt to Working Feature* (https://www.youtube.com/watch?v=pYhYlcmFOwU) — Movie search demo with Vite + React + TS + MVVM + OMDb + Firebase. This app is an **independent rebuild** with distinct design, data flow, and improvements — not a clone.
 
@@ -112,7 +112,7 @@ Workflow: prompt → AI output → manual review in editor → run `npm run buil
 8. **CSS polish:** AI's header was flat; I added sticky glass (`backdrop-filter`), pill search, 5-col grid, shimmer skeletons, and toast for favourite feedback — additive only, no logic change.
 
 ## Submission
-- Live app: _(Vercel link)_
+- Live app: https://cinescope-phi-ebon.vercel.app (and https://cinescope-aditya-dixits-projects-06f0b598.vercel.app)
 - Repo: https://github.com/Aditya-dxt/cinescope
 - Video reference: https://www.youtube.com/watch?v=pYhYlcmFOwU
 - Assignment: `internship.flyrank.ai/intern/assignments/CUSTOM-MRC9R0VW-1B5749AA`

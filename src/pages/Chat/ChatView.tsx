@@ -14,6 +14,8 @@ export function ChatView() {
   const [thinking, setThinking] = useState(false);
   const [toolParts, setToolParts] = useState<ToolPart[]>([]);
   const [confirmNeeded, setConfirmNeeded] = useState<null | { title: string }>(null);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const lastUserTextRef = useRef<string>("");
   const abortRef = useRef<AbortController | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(true);
@@ -63,9 +65,11 @@ export function ChatView() {
   // confirmation tool demo: asks user before adding to watchlist
   function requestAddToWatchlist(title: string) { setConfirmNeeded({ title }); }
 
-  async function send() {
-    const text = input.trim();
+  async function send(retryText?: string) {
+    const text = (retryText ?? input).trim();
     if (!text || streaming) return;
+    lastUserTextRef.current = text;
+    setChatError(null);
     // tool intent detection: "lookup X" or "score X as cozy" triggers tool instead of pure chat
     const lookupMatch = text.match(/lookup\s+(.+)/i);
     const scoreMatch = text.match(/score\s+(.+?)\s+as\s+(cozy|intense|fun|mind-bending)/i);
@@ -116,12 +120,20 @@ export function ChatView() {
         setThinking(true);
         await new Promise(r => setTimeout(r, 350));
         if (ac.signal.aborted) throw new DOMException("aborted", "AbortError");
+        // sabotage hook: if text === "__fail_mid__" simulate mid-stream 429
+        if (text === "__fail_mid__") throw new Error("429 rate limited mid-stream (simulated)");
+        if (text === "__fail_malformed__") throw new SyntaxError("malformed JSON from tool (simulated)");
         for await (const tok of mockStream(mockReply(text), ac.signal, 22)) {
           append(tok);
         }
       }
     } catch (e) {
-      if ((e as Error)?.name !== "AbortError") append(" …");
+      if ((e as Error)?.name === "AbortError") { /* stopped mid-stream — partial persists, input re-enables */ }
+      else {
+        const msg = (e as Error).message.includes("429") ? "Rate limited — please retry in a moment." : (e as Error).message.includes("malformed") ? "Tool returned malformed data — retry will re-parse." : `Stream failed: ${(e as Error).message}`;
+        setChatError(msg);
+        // keep partial assistant content as-is, do not clear
+      }
     } finally {
       setThinking(false);
       setStreaming(false);
@@ -175,7 +187,17 @@ export function ChatView() {
       )}
 
       <div ref={listRef} onScroll={onScroll} style={{flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:10, padding:"12px 0", maxHeight:"52vh", scrollBehavior:"smooth"}} aria-live="polite">
-        {messages.length===0 && toolParts.length===0 && <div className="muted small" style={{textAlign:"center", padding:24}}>Start a conversation — try "cozy weekend thriller under 2 hours" or use the demo buttons above</div>}
+        {messages.length===0 && toolParts.length===0 && (
+          <div style={{textAlign:"center", padding:24, background:"#0f0f14", border:"1px dashed var(--border)", borderRadius:10}}>
+            <div style={{fontWeight:800, fontSize:14}}>No conversation yet</div>
+            <div className="muted small" style={{marginTop:6}}>Start with a mood — pick one to fill the input:</div>
+            <div style={{display:"flex", gap:8, justifyContent:"center", flexWrap:"wrap", marginTop:10}}>
+              <button className="btn-ghost" style={{fontSize:12}} onClick={()=>setInput("cozy weekend thriller under 2 hours")}>cozy thriller</button>
+              <button className="btn-ghost" style={{fontSize:12}} onClick={()=>setInput("lookup Dune")}>lookup Dune</button>
+              <button className="btn-ghost" style={{fontSize:12}} onClick={()=>setInput("score Inception as intense")}>score Inception</button>
+            </div>
+          </div>
+        )}
         {messages.map(m => (
           <div key={m.id} style={{
             alignSelf: m.role==="user" ? "flex-end" : "flex-start",
@@ -188,6 +210,18 @@ export function ChatView() {
           </div>
         ))}
         {thinking && !streaming && <div className="muted small" style={{padding:"0 4px"}}><span style={{display:"inline-block", animation:"pulse 1s infinite"}}>●</span> thinking…</div>}
+        {/* retryable error — mid-stream failure shows designed error with working retry (not crash) */}
+        {chatError && (
+          <div style={{background:"#1a0f0f", border:"1px solid #7f1d1d", borderRadius:10, padding:12}} role="alert" aria-live="assertive">
+            <div style={{fontWeight:800, fontSize:12, color:"#fca5a5"}}>Stream interrupted</div>
+            <div style={{fontSize:12, marginTop:6}}>{chatError}</div>
+            <div style={{display:"flex", gap:8, marginTop:10}}>
+              <button className="btn-primary" style={{fontSize:12}} onClick={()=>send(lastUserTextRef.current)} disabled={streaming}>Retry</button>
+              <button className="btn-ghost" style={{fontSize:12}} onClick={()=>setChatError(null)}>Dismiss</button>
+            </div>
+            <div className="muted small" style={{marginTop:6}}>Retry re-sends the failed message only — handling double-click safely; partial content before failure is preserved.</div>
+          </div>
+        )}
         {/* Tool parts rendered inline as generative UI — each state distinct */}
         {toolParts.map((tp, i) => (
           <div key={i} style={{maxWidth:"92%", alignSelf:"flex-start", width:"100%"}}>

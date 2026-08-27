@@ -11,6 +11,7 @@ import { ChatView } from "./pages/Chat/ChatView";
 import { StackChoiceView } from "./pages/StackChoice/StackChoiceView";
 import { Fl05View } from "./pages/Fl05/Fl05View";
 import { WorkflowView } from "./pages/Workflow/WorkflowView";
+import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
 import { AiPanel } from "./components/AiPanel/AiPanel";
 import { useState, useEffect } from "react";
 
@@ -52,7 +53,7 @@ function AppShell() {
       <Header query={query} setQuery={setQuery} onSearch={handleSearch} onClear={handleClear} />
       <main className="main">
         <Routes>
-          <Route path="/" element={<HomeViewWrapper headerQuery={query} headerSearchTrigger={searchTrigger} />} />
+          <Route path="/" element={<ErrorBoundary label="Home"><HomeViewWrapper headerQuery={query} headerSearchTrigger={searchTrigger} /></ErrorBoundary>} />
           <Route path="/favourites" element={<FavouritesView />} />
           <Route path="/auth" element={<AuthView />} />
           <Route path="/health" element={<HealthView />} />
@@ -61,7 +62,7 @@ function AppShell() {
           <Route path="/next-case" element={<LaunchPlanView />} />
           <Route path="/launch-plan" element={<LaunchPlanView />} />
           <Route path="/playground" element={<PlaygroundView />} />
-          <Route path="/chat" element={<ChatView />} />
+          <Route path="/chat" element={<ErrorBoundary label="Chat"><ChatView /></ErrorBoundary>} />
           <Route path="/stack" element={<StackChoiceView />} />
           <Route path="/workflow" element={<WorkflowView />} />
           <Route path="/fl05" element={<Fl05View />} />

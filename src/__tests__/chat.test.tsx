@@ -1,13 +1,15 @@
-import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { ChatView } from "../pages/Chat/ChatView";
 import { BrowserRouter } from "react-router-dom";
 
+afterEach(() => { cleanup(); try { localStorage.clear(); } catch {} });
+
 describe("Chat streaming", () => {
   it("renders input and send, streams mock and stop preserves", async () => {
-    render(<BrowserRouter><ChatView /></BrowserRouter>);
-    const input = screen.getByLabelText("Message") as HTMLInputElement;
-    const send = screen.getByText("Send") as HTMLButtonElement;
+    const { container } = render(<BrowserRouter><ChatView /></BrowserRouter>);
+    const input = container.querySelector('[aria-label="Message"]') as HTMLInputElement;
+    const send = container.querySelector('button[type="submit"]') as HTMLButtonElement;
     expect(input).toBeInTheDocument();
     // empty send disabled
     expect(send.disabled).toBe(true);

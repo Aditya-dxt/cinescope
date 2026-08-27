@@ -7,6 +7,7 @@ import { HealthView } from "./pages/Health/HealthView";
 import { Week03View } from "./pages/Week03/Week03View";
 import { LaunchPlanView } from "./pages/LaunchPlan/LaunchPlanView";
 import { PlaygroundView } from "./playground/PlaygroundView";
+import { ChatView } from "./pages/Chat/ChatView";
 import { AiPanel } from "./components/AiPanel/AiPanel";
 import { useState, useEffect } from "react";
 
@@ -57,6 +58,7 @@ function AppShell() {
           <Route path="/next-case" element={<LaunchPlanView />} />
           <Route path="/launch-plan" element={<LaunchPlanView />} />
           <Route path="/playground" element={<PlaygroundView />} />
+          <Route path="/chat" element={<ChatView />} />
           <Route path="/NOTES.md" element={<PlaygroundView />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

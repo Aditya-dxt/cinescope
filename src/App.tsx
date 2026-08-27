@@ -6,6 +6,8 @@ import { AuthView } from "./pages/Auth/AuthView";
 import { HealthView } from "./pages/Health/HealthView";
 import { Week03View } from "./pages/Week03/Week03View";
 import { LaunchPlanView } from "./pages/LaunchPlan/LaunchPlanView";
+import { PlaygroundView } from "./playground/PlaygroundView";
+import { AiPanel } from "./components/AiPanel/AiPanel";
 import { useState, useEffect } from "react";
 
 // Lift search state so Header and Home share it
@@ -54,6 +56,8 @@ function AppShell() {
           <Route path="/identity" element={<Week03View />} />
           <Route path="/next-case" element={<LaunchPlanView />} />
           <Route path="/launch-plan" element={<LaunchPlanView />} />
+          <Route path="/playground" element={<PlaygroundView />} />
+          <Route path="/NOTES.md" element={<PlaygroundView />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -134,9 +138,15 @@ function HomeViewWrapper({ headerQuery, headerSearchTrigger }: { headerQuery: st
       )}
 
       {!vm.initialLoading && vm.movies.length > 0 && (
-        <div className="grid">
-          {vm.movies.map(m => <MovieCard key={m.imdbID} movie={m} onFavourite={vm.handleFavourite} />)}
-        </div>
+        <>
+          <AiPanel movies={vm.movies} />
+          <div style={{marginBottom:16, marginTop:12}}>
+            <a href="/playground" style={{fontSize:12, color:"#06b6d4"}}>FE-05 Playground: Dialog · Tabs · Disclosure →</a>
+          </div>
+          <div className="grid">
+            {vm.movies.map(m => <MovieCard key={m.imdbID} movie={m} onFavourite={vm.handleFavourite} />)}
+          </div>
+        </>
       )}
     </div>
   );

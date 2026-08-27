@@ -1,5 +1,6 @@
 import { useHomeViewModel } from "./useHomeViewModel";
 import { MovieCard } from "../../components/MovieCard/MovieCard";
+import { AiPanel } from "../../components/AiPanel/AiPanel";
 import { hasOmdbKey } from "../../services/omdbService";
 import { useEffect } from "react";
 
@@ -49,11 +50,14 @@ export function HomeView() {
       )}
 
       {!initialLoading && movies.length > 0 && (
-        <div className="grid">
-          {movies.map(m => (
-            <MovieCard key={m.imdbID} movie={m} onFavourite={handleFavourite} />
-          ))}
-        </div>
+        <>
+          <AiPanel movies={movies} />
+          <div className="grid">
+            {movies.map(m => (
+              <MovieCard key={m.imdbID} movie={m} onFavourite={handleFavourite} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

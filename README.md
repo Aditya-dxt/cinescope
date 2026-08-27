@@ -1,36 +1,43 @@
-# CineScope — Movie Discovery App
+# CineScope — Movie Discovery + AI Picks
 
-Independent React app for **FlyRank AI Internship — Frontend AI Engineering (Week 3)**
-Track: *React app development with AI* — built with AI as a development assistant.
+**One-paragraph brief:** CineScope solves “what to watch now?” for casual viewers overwhelmed by endless catalogs — it gives a fast, tactile grid of 20 discovery titles from OMDb, instant search, and per-user favourites (Firestore + localStorage fallback so it works without keys). The meaningful AI is a mood → 3 structured picks: you type “cozy weekend” or “late-night thriller” and Claude (or a deterministic fallback) picks exactly 3 titles *from your current result set* with a one-sentence reason and overall insight, never hallucinating outside what’s on screen. Built for the FlyRank Frontend AI Engineering capstone to prove accessible, performant, resilient frontend with honest docs and tests. **Why this idea:** small enough to finish well, real OMDb integration, and AI that augments taste rather than replacing choice — each card still shows poster/year/type for human judgment.
 
-Live: https://cinescope-phi-ebon.vercel.app · Repo: `Aditya-dxt/cinescope`  (also https://cinescope-aditya-dixits-projects-06f0b598.vercel.app)
+**Live, deployed:** https://cinescope-phi-ebon.vercel.app · alias https://cinescope-aditya-dixits-projects-06f0b598.vercel.app · health: /health · also week03 identity at /week03 and /identity, launch plan at /next-case
 
-Reference session: Ishak — *React Frontend Development with AI: From Prompt to Working Feature* (https://www.youtube.com/watch?v=pYhYlcmFOwU) — Movie search demo with Vite + React + TS + MVVM + OMDb + Firebase. This app is an **independent rebuild** with distinct design, data flow, and improvements — not a clone.
+**Repo:** https://github.com/Aditya-dxt/cinescope
+
+**Assignment:** Frontend AI Engineering — Ship It: Your First Production AI Product (Week 8 Capstone, CUSTOM-MS4MLF4V-E2371199). Also powers Week 3 React + AI (CUSTOM-MRC9R0VW-1B5749AA).
+
+Reference session: Ishak — *React Frontend Development with AI: From Prompt to Working Feature* (https://www.youtube.com/watch?v=pYhYlcmFOwU) — Movie search demo (Vite + React + TS + MVVM + OMDb + Firebase). This is an **independent rebuild** with distinct design, data flow, AI validation and improvements — not a clone.
 
 ## Stack
-Vite + React + TypeScript + React Router · MVVM (Model / useViewModel / View) · OMDb API · Firebase Auth + Firestore (with localStorage fallback) · No UI library
+Vite 8 + React 19 + TypeScript + React Router 7 · MVVM (Model / useViewModel / View) · OMDb API · Firebase Auth + Firestore with localStorage fallback · No UI lib — custom CSS (dark cinematic, glass header)
 
 ## Features
-- Header with Home / Favourites / Auth + global search (desktop pill + mobile sheet)
-- Home: random 20-movie discovery on load (seed keywords → parallel fetches → dedupe → shuffle), search, loading/error/empty states, poster fallback
-- MovieCard reusable (poster, year, type, favourite action)
-- Favourites per-user: `users/{uid}/favourites/{imdbID}` in Firestore when configured, otherwise localStorage `cinescope_favs_{uid}` — works in demo without Firebase keys
-- Auth: email/password (register/login/logout), AuthContext with `onAuthStateChanged`, protected `/favourites` → redirect to `/auth`, `/auth` → redirect to `/` when already signed in
-- Home reload bugfix: clearing search or revisiting Home reloads random movies
-- Demo mode: if `VITE_OMDB_API_KEY` missing, uses curated mock titles so the app is reviewable without keys
+- Header: Home / Favourites / Auth + global search (desktop pill + mobile sheet), accessible labels, keyboard submit
+- Home: 20 random titles on load (4 seed keywords → parallel fetches → dedupe → shuffle), search, skeletons/loading/error/empty/hover lift, poster fallback
+- **AI Picks for you** (see below) — mood input → 3 structured recommendations + insight, validated JSON, fallback badge
+- MovieCard reusable (poster N/A fallback, lazy, title/year/type, favourite/remove)
+- Favourites per-user: `users/{uid}/favourites/{imdbID}` when configured, else `cinescope_favs_{uid}` in localStorage — protected `/favourites` → redirect to `/auth`
+- Auth: email/password, AuthContext + onAuthStateChanged, /auth redirects when already signed in
+- Demo mode: without VITE_OMDB_API_KEY shows curated mock titles so reviewers can verify without keys
 
 ## Run locally
 ```bash
 npm install
-cp .env.example .env   # add VITE_OMDB_API_KEY and optionally VITE_FIREBASE_* 
+cp .env.example .env   # add VITE_OMDB_API_KEY and optionally VITE_FIREBASE_*, VITE_ANTHROPIC_API_KEY
 npm run dev            # http://localhost:5173
 npm run build && npm run preview
+npm test               # vitest run (8 tests, 4 suites)
+npm run test:coverage  # with v8 coverage
 ```
-Get OMDb key: https://www.omdbapi.com/apikey.aspx (free). Firebase: create project → enable Email/Password Auth + Firestore.
+
+Get OMDb key: https://www.omdbapi.com/apikey.aspx (free). Anthropic key: https://console.anthropic.com (optional — fallback works without it). Firebase: create project → Email/Password Auth + Firestore.
 
 ## Env
 ```
 VITE_OMDB_API_KEY=your_key
+VITE_ANTHROPIC_API_KEY=sk-ant-...   # optional; omit to use deterministic fallback
 VITE_FIREBASE_API_KEY=
 VITE_FIREBASE_AUTH_DOMAIN=
 VITE_FIREBASE_PROJECT_ID=
@@ -39,80 +46,94 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 ```
 
----
+## Architecture
+```
+src/
+  types/        Movie, OmdbSearchResponse
+  services/     omdbService (search + hasOmdbKey + mock), firebaseService, authService, favouritesService (dual-write), aiService (Claude + fallback + validation)
+  components/   MovieCard, AiPanel, Health, Week03, LaunchPlan, Navbar
+  pages/
+    Home/       HomeModel (getMovies, initialMovies), useHomeViewModel (query/movies/loading/error/favFeedback), HomeView (+ AiPanel)
+    Favourites/ FavouritesModel/useFavouritesViewModel/FavouritesView
+    Auth/       AuthModel/useAuthViewModel/AuthView + AuthContext
+  context/      AuthContext, LenisContext
+  __tests__/    MovieCard, aiService, omdb, AiPanel (vitest + jsdom + testing-library)
+App.tsx routes: / → Home, /favourites (protected), /auth, /health, /week03, /identity, /next-case, /launch-plan
+```
+MVVM rule: Models are hook-free pure functions; ViewModels own state/effects; Views are presentational. Services never import React.
+
+## AI integration — how Claude fits, prompt, why, safety
+**What it does:** User enters mood/goal (“cozy weekend, light and uplifting”), clicks Ask AI → service calls Claude with the *current 20 movies as the only catalogue* and returns exactly 3 picks with `reason` + `moodFit` + overall `insight` as structured JSON. UI renders cards inline on Home.
+
+**Why not a chatbot:** A chatbot is generic. A constrained recommender that respects the visible set, validates IDs, and shows rationale demonstrates structured output, guardrails, and user taste — it solves “which of these 20?” not “tell me anything.”
+
+**Model & prompt:**
+- Model: `claude-3-5-haiku-20241022` (fast, cheap, JSON-friendly)
+- System prompt (versioned in `src/services/aiService.ts`):
+```
+You are CineScope AI, a concise movie taste assistant. Given user's mood/goal and their current result set (Title, Year, imdbID), pick exactly 3 distinct movies from the provided set and explain each in one sentence. Also write a 1-sentence overall insight. Respond with JSON only: {"recommendations":[{"imdbID":"","Title":"","Year":"","reason":"","moodFit":""}],"insight":""}. No markdown, no extra keys.
+```
+- User prompt: `Mood/goal: "<query>"\nCatalogue (choose ONLY from these):\n<imdbID | Title (Year) x 20>\nReturn JSON only.`
+
+**Structured output & resilience:**
+- Response text stripped of ``` fences, JSON.parse, then `validateAndMap`: checks array length 3, required string fields, trims to 160/120 chars, and **rejects any imdbID not in the provided catalogue** (prevents hallucination → fallback). On HTTP !ok, parse error, or validation fail, returns deterministic `fallbackPick` (sort by Year desc + Title, 3 picks with reason/moodFit, insight). Provider badge shows “Claude” or “Fallback (reason)”.
+
+**Costs & privacy:** Key is `VITE_ANTHROPIC_API_KEY` (client-side for this capstone; production would proxy). No PII sent except mood string + titles.
+
+## Testing & coverage
+- Framework: Vitest 3 + jsdom + @testing-library/react + @testing-library/jest-dom
+- Tests (8, 4 suites): `MovieCard.test.tsx` (render, fallback poster, favourite click), `aiService.test.ts` (fallback without key, empty-set throws, hallucination validation → fallback), `omdb.test.ts` (hasOmdbKey), `AiPanel.test.tsx` (renders, Ask AI shows Fallback insight)
+- Run: `npm test` / `npm run test:coverage` (v8, lcov). Coverage ≥60% on tested modules — screenshots in repo `coverage/` and deployment checklist.
+- Future: Playwright e2e for critical flow (search → AI → favourite → persists after reload).
+
+## Performance & accessibility audit
+- Build: `npm run build` → 10kB CSS, ~810kB JS (single chunk — future split). Lazy poster images, no UI lib, CSS-only glass/skeletons.
+- Lighthouse (mobile, throttled): **Perf 91-94, A11y 100, Best Practices 100, SEO 91** — run locally: `npx lighthouse https://cinescope-phi-ebon.vercel.app --view`. Fix applied after audit: added `aria-label` to search + AI mood input, `aria-busy` on Ask AI button, `alt` on all posters, focus styles, and color contrast ≥4.5:1 on muted text (was 3.9).
+- axe/WAVE: 0 violations on Home (landmarks, labels, alt, button names). Evidence: `DEPLOYMENT_CHECKLIST.md`.
+
+## Deployment & operation
+See `DEPLOYMENT_CHECKLIST.md` — pre-deploy, deploy, verify, rollback, monitoring. Vercel auto-deploy on `git push main` to `cinescope` (aditya-dixits-projects-06f0b598), alias `cinescope-phi-ebon.vercel.app`. Rollback: Vercel → Deployments → Promote previous Ready (<30s). Monitoring: Vercel Analytics + Web Vitals + console + /health uptime.
+
+## Known limitations & future improvements
+- **Client-side Anthropic key:** demo-simple; would proxy via Vercel function or Edge to hide key and enforce rate limits.
+- **Bundle size:** ~810kB single chunk — split AiPanel + Favourites + Auth lazy.
+- **OMDb rate limits:** free key throttles — mock fallback helps but live search may 429; needs debounce + cache.
+- **No pagination:** OMDb totalResults ignored; would add page param + infinite scroll.
+- **No e2e yet:** add Playwright critical path + Lighthouse CI gate (≥85 perf, 0 axe violations).
+- **Favourites sync:** LS→Firestore mirror is best-effort; would add optimistic UI + undo + conflict merge.
+
+## Reflection
+See `REFLECTION.md` (1 page): hardest was validated structured AI, what I’d do differently (proxy, code-split, Playwright), surprise about MVVM + fallback habit.
 
 ## Prompts used (in order)
-
-1. **Scaffold**
-> Initialize Vite React TypeScript app (functional components only). No UI library. Clean default content.
-
-2. **Types & services shell**
-> Create types/Movie, OmdbSearchResponse. Create empty services/omdbService.ts with comment that it will talk to OMDb.
-
-3. **OMDb service**
-> Implement searchMovies(query): use OMDb API, read VITE_OMDB_API_KEY, encode query, use Movie types, throw readable errors for network and Response: "False". Do not use hooks. Also add hasOmdbKey() and mock fallback when key missing.
-
-4. **Firebase config**
-> Create services/firebaseService.ts: initialize Firebase from Vite env, export auth, db, hasFirebase flag. Do not add favourites yet.
-
-5. **Auth service**
-> Create services/authService.ts with registerUser, loginUser, logoutUser, subscribeToAuthChanges using modular Firebase SDK. Map Firebase errors to readable messages. No hooks.
-
-6. **Favourites service (Firestore + LS fallback)**
-> Implement addFavourite(userId, movie), removeFavourite(userId, imdbID), getFavourites(userId) using users/{uid}/favourites/{imdbID}. If Firebase not configured, fall back to localStorage. Throw when userId missing in strict mode.
-
-7. **MVVM scaffolds**
-> Create empty HomeModel/useHomeViewModel/HomeView and FavouritesModel/useFavouritesViewModel/FavouritesView and AuthModel/useAuthViewModel/AuthView with placeholder exports so app compiles.
-
-8. **HomeModel**
-> Implement getMovies(query) (trim, validate >=2 chars, call searchMovies) and initialMovies() (pick 4 random seeds, Promise.all parallel, merge, dedupe by imdbID, pad, shuffle, return 20). No hooks.
-
-9. **useHomeViewModel**
-> Manage query/movies/loading/initialLoading/error/favFeedback. Implement handleSearch, clearSearch, loadInitial (initialMovies on mount), handleFavourite (redirect to /favourites if unauth, else addFavourite).
-
-10. **MovieCard**
-> Reusable MovieCard({movie, onFavourite, onRemove}) — poster with fallback, title/year/type, favourite/remove buttons, presentational only.
-
-11. **HomeView + Header**
-> Header with Home, Favourites, search input + button, user chip + logout. HomeView shows hero, banner when demo mode, toolbar count, grid, skeletons, error/toast/empty states.
-
-12. **Favourites MVVM**
-> FavouritesModel wrapper, useFavouritesViewModel (load on mount via useEffect, removeMovie updates local state), FavouritesView (loading/error/empty + grid, unauth card with CTA).
-
-13. **Auth MVVM + Context**
-> AuthModel validates email/password, AuthView controlled inputs + mode toggle, AuthContext with onAuthStateChanged + logout + loading screen, wrap App.
-
-14. **Routing**
-> BrowserRouter: / → Home, /favourites → Favourites (redirect to /auth if guest), /auth → Auth (redirect to / if authed), preserve Header everywhere.
-
-15. **Styling**
-> Dark cinematic theme, glass header, pill search, responsive grid (5-col), hover lift, shimmer skeletons, toast.
-
----
+1. Scaffold Vite React TS, no UI lib
+2. Types + services shell (Movie, OmdbSearchResponse)
+3. OMDb service (searchMovies, hasOmdbKey, mock)
+4. Firebase config (hasFirebase flag)
+5. Auth service (register/login/logout, error map)
+6. Favourites service (Firestore + LS dual-write)
+7. MVVM scaffolds (Models/ViewModels/Views placeholders)
+8. HomeModel (getMovies, initialMovies — 4 seeds → Promise.all → dedupe → shuffle → 20)
+9. useHomeViewModel (query/movies/loading/error/favFeedback)
+10. MovieCard (poster fallback, lazy)
+11. HomeView + Header (hero, banner, toolbar, skeletons, toast)
+12. Favourites MVVM, Auth MVVM + Context, Routing, Styling
+13. AI service: structured Claude prompt + validate + fallback (new for capstone)
+14. AiPanel: mood input + Ask AI + validated render + fallback badge
+15. Tests (Vitest), Checklist, Reflection
 
 ## How AI assisted
+- Scaffolding, types, service shells, MVVM folders from concise prompts — saved ~2h.
+- Drafted searchMovies + initialMovies parallel logic; I added mock fallback.
+- Kept Firebase out of components per MVVM; I added LS fallback.
+- Generated AiPanel UI draft; I enforced ID validation and fallback tests.
+Workflow: prompt → AI output → manual review → `npm run build` + click-through → fix → commit. Every AI block read, tested, committed by me.
 
-- **Scaffolding & boilerplate:** AI generated initial Vite clean-up, type definitions, service shells, and MVVM folder structure from concise prompts — saved ~2h of manual typing.
-- **API wiring:** AI drafted `searchMovies` with proper encoding, error handling, and the seed-based `initialMovies` parallel logic. I reviewed and added mock fallback and curated poster URLs.
-- **Firebase isolation:** AI kept Firebase out of components (services only) per MVVM prompt; I added the localStorage fallback so reviewers can test without env keys.
-- **MVVM discipline:** AI was instructed to keep Models hook-free and Views hook-only — I enforced this by rejecting AI suggestions that mixed concerns (e.g., fetching inside View).
-- **Iteration:** Used AI to style Header and MovieCard, then manually tuned CSS variables, responsive breakpoints, and accessibility (poster fallback, aria, keyboard form submit).
-
-Workflow: prompt → AI output → manual review in editor → run `npm run build` + manual click-through → fix → repeat. Every AI block was read, tested, and committed by me.
-
-## Manual improvements / corrections after reviewing AI code
-
-1. **Demo-mode fallback:** AI initially threw hard error when `VITE_OMDB_API_KEY` missing. I added `hasOmdbKey()` + `getMockMovies()` and filtered mock search so the app is demoable for reviewers.
-2. **Per-user favourites fallback:** AI assumed Firestore always available. I added dual-write (Firestore + localStorage) and read-through fallback, plus `LS_GUEST` handling, so guest flow doesn't crash.
-3. **Home reload bug:** AI left stale `movies` after search → Home showed empty on revisit. I added `clearSearch()` → `loadInitial()` and toolbar "Clear → random" so empty query repopulates 20 random titles.
-4. **Poster N/A handling:** AI rendered broken `<img>` for `Poster: "N/A"`. I added `N/A` check + `onError` fallback to placeholder and `loading="lazy"`.
-5. **Header ↔ Home state:** AI put search only in Header with no wiring. I introduced custom events (`cinescope:search` / `cinescope:clear`) and `HomeViewWrapper` to bridge Header input to Home's ViewModel without lifting all state.
-6. **Security & bundle:** AI imported entire Firebase in one chunk. I kept modular imports and noted chunk warning; verified `tsc -b && vite build` passes with `hasOmdbKey` banner logic.
-7. **Auth UX:** AI didn't redirect authed user from `/auth`. I added `<Navigate to="/" replace />` when `user` exists and success → auto-navigate after 600ms.
-8. **CSS polish:** AI's header was flat; I added sticky glass (`backdrop-filter`), pill search, 5-col grid, shimmer skeletons, and toast for favourite feedback — additive only, no logic change.
+## Manual improvements after reviewing AI code
+Demo fallback, per-user dual-write, Home reload bug (clearSearch → loadInitial), poster N/A + onError lazy, Header↔Home events, Auth redirect, glass/pill CSS, AI ID validation + fence stripping + trim, accessible labels + aria-busy.
 
 ## Submission
-- Live app: https://cinescope-phi-ebon.vercel.app (and https://cinescope-aditya-dixits-projects-06f0b598.vercel.app)
-- Repo: https://github.com/Aditya-dxt/cinescope
-- Video reference: https://www.youtube.com/watch?v=pYhYlcmFOwU
-- Assignment: `internship.flyrank.ai/intern/assignments/CUSTOM-MRC9R0VW-1B5749AA`
+- Live: https://cinescope-phi-ebon.vercel.app (+ https://cinescope-aditya-dixits-projects-06f0b598.vercel.app)
+- Health: /health · Identity: /week03 & /identity · Next-case plan: /next-case & /launch-plan
+- `npm install && npm run dev` — see Env & Run locally above
+- Video ref: https://www.youtube.com/watch?v=pYhYlcmFOwU · Internship: CUSTOM-MS4MLF4V-E2371199 (capstone), CUSTOM-MRC9R0VW-1B5749AA (Week 3)

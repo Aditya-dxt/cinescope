@@ -17,6 +17,7 @@ import { AgentRunView } from "./pages/AgentRun/AgentRunView";
 import { DnsView } from "./pages/Dns/DnsView";
 import { MotionView } from "./pages/Motion/MotionView";
 import { MakeItDoView } from "./pages/MakeItDo/MakeItDoView";
+import { OpenPhoneView } from "./pages/OpenPhone/OpenPhoneView";
 import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
 import { AiPanel } from "./components/AiPanel/AiPanel";
 import { useState, useEffect } from "react";
@@ -79,6 +80,7 @@ function AppShell() {
           <Route path="/dns" element={<DnsView />} />
           <Route path="/motion" element={<MotionView />} />
           <Route path="/make-it-do" element={<MakeItDoView />} />
+          <Route path="/open-phone" element={<OpenPhoneView />} />
           <Route path="/NOTES.md" element={<PlaygroundView />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

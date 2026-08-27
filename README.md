@@ -58,7 +58,7 @@ src/
     Auth/       AuthModel/useAuthViewModel/AuthView + AuthContext
   context/      AuthContext, LenisContext
   __tests__/    MovieCard, aiService, omdb, AiPanel (vitest + jsdom + testing-library)
-App.tsx routes: / → Home, /favourites (protected), /auth, /health, /week03, /identity, /next-case, /launch-plan
+App.tsx routes: / → Home, /favourites (protected), /auth, /health, /week03, /identity, /next-case, /launch-plan, /playground, /chat, /stack, /workflow, /fl05
 ```
 MVVM rule: Models are hook-free pure functions; ViewModels own state/effects; Views are presentational. Services never import React.
 
@@ -79,6 +79,23 @@ You are CineScope AI, a concise movie taste assistant. Given user's mood/goal an
 - Response text stripped of ``` fences, JSON.parse, then `validateAndMap`: checks array length 3, required string fields, trims to 160/120 chars, and **rejects any imdbID not in the provided catalogue** (prevents hallucination → fallback). On HTTP !ok, parse error, or validation fail, returns deterministic `fallbackPick` (sort by Year desc + Title, 3 picks with reason/moodFit, insight). Provider badge shows “Claude” or “Fallback (reason)”.
 
 **Costs & privacy:** Key is `VITE_ANTHROPIC_API_KEY` (client-side for this capstone; production would proxy). No PII sent except mood string + titles.
+
+## FE-07 Tool results and structured output in the UI
+Server-side tools defined with Zod + `execute` in `src/tools/movieTools.ts`, wired in `api/chat.ts` via AI SDK `streamText({ tools })`. Client renders typed tool parts from `src/components/ToolCard/ToolCard.tsx` — 200ms morph between states, each answers a different user question.
+
+| Tool | Description | Input schema (Zod) | Return shape | Error case |
+|------|-------------|--------------------|--------------|------------|
+| `lookupMovie` | Fetch movie metadata for a title (OMDb). Used when user asks "lookup X" or chat needs structured card. | `z.object({ title: z.string().min(1).describe("Exact movie title to lookup via OMDb") })` | `{ Title, Year, Rated, Runtime, Genre, Plot, imdbRating, Poster, Source: 'omdb' \| 'mock' }` | Not found → `Error('Not found')` → renders designed error card, not crash |
+| `getWatchScore` | Score a movie for watchlist with vibe weighting. Returns score + breakdown for chart. | `z.object({ title: z.string(), vibe: z.enum(['cozy','intense','fun','mind-bending']).describe("Viewer vibe") })` | `{ title, vibe, score: 0-10, breakdown: {story, rewatch, vibeFit}, verdict }` | Invalid vibe → Zod parse error; missing title → validation error — both typed error states |
+
+Four tool part states each distinct:
+- `input-streaming` — dashed border, pulsating dot, "resolving input…" (what is it doing?)
+- `input-available` — blue card, monospace JSON of validated input (with what input?)
+- `output-available` — green card, renders as component: lookupMovie → poster card, getWatchScore → score card + hand-rolled SVG bars (not JSON dump)
+- `output-error` — red alert, `role="alert"` with message + "Retry" guidance (what went wrong?)
+- User-interaction tool: "Add to watchlist" confirmation dialog (client tool) — requires user Confirm/Cancel before execute (FE-07 #4 stretch).
+
+Try live: `/chat` → buttons "Demo: lookup Inception" / "Demo: score Dune · intense" / "Demo: failed tool" iterate states; or type `lookup Dune` / `score Inception as cozy`.
 
 ## Testing & coverage
 - Framework: Vitest 3 + jsdom + @testing-library/react + @testing-library/jest-dom

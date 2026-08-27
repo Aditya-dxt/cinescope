@@ -46,6 +46,7 @@ export function Header({ query = "", setQuery, onSearch, onClear }: HeaderProps)
           <Link to="/favourites" className={location.pathname === "/favourites" ? "nav-link active" : "nav-link"}>
             Favourites
           </Link>
+          <Link to="/health" className={location.pathname === "/health" ? "nav-link active" : "nav-link"}>Health</Link>
           {user ? (
             <>
               <span className="nav-user" title={user.email ?? ""}>{user.email?.split("@")[0]}</span>

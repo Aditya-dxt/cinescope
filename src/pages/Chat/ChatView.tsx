@@ -186,7 +186,7 @@ export function ChatView() {
         </div>
       )}
 
-      <div ref={listRef} onScroll={onScroll} style={{flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:10, padding:"12px 0", maxHeight:"52vh", scrollBehavior:"smooth"}} aria-live="polite">
+      <div ref={listRef} onScroll={onScroll} style={{flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:10, padding:"12px 0", maxHeight:"52vh", scrollBehavior:"smooth"}} role="log" aria-live="polite" aria-relevant="additions text" aria-busy={streaming} aria-label="Conversation">
         {messages.length===0 && toolParts.length===0 && (
           <div style={{textAlign:"center", padding:24, background:"#0f0f14", border:"1px dashed var(--border)", borderRadius:10}}>
             <div style={{fontWeight:800, fontSize:14}}>No conversation yet</div>
@@ -209,7 +209,7 @@ export function ChatView() {
             {m.content || (thinking && m.role==="assistant" ? <span className="muted">thinking…</span> : null)}
           </div>
         ))}
-        {thinking && !streaming && <div className="muted small" style={{padding:"0 4px"}}><span style={{display:"inline-block", animation:"pulse 1s infinite"}}>●</span> thinking…</div>}
+        {thinking && !streaming && <div className="muted small" style={{padding:"0 4px"}} role="status" aria-live="polite"><span style={{display:"inline-block", animation:"pulse 1s infinite"}} aria-hidden="true">●</span> thinking…</div>}
         {/* retryable error — mid-stream failure shows designed error with working retry (not crash) */}
         {chatError && (
           <div style={{background:"#1a0f0f", border:"1px solid #7f1d1d", borderRadius:10, padding:12}} role="alert" aria-live="assertive">
@@ -234,13 +234,13 @@ export function ChatView() {
         <button className="btn-ghost" onClick={() => { try { listRef.current?.scrollTo?.({ top: listRef.current.scrollHeight, behavior:"smooth" }); } catch {} }} style={{alignSelf:"center", fontSize:12, marginBottom:6}}>Jump to latest ↓</button>
       )}
 
-      <form onSubmit={e => { e.preventDefault(); send(); }} style={{display:"flex", gap:8, padding:"10px 0", position:"sticky", bottom:0, background:"var(--bg, #0a0a0f)"}}>
-        <label htmlFor="chat-input" className="sr-only">Message</label>
-        <input id="chat-input" className="search-input" style={{flex:1}} value={input} onChange={e=>setInput(e.target.value)} placeholder="Ask for a film… or type 'lookup Dune' / 'score Dune as intense'" disabled={streaming} aria-label="Message" />
+      <form onSubmit={e => { e.preventDefault(); send(); }} style={{display:"flex", gap:8, padding:"10px 0", position:"sticky", bottom:0, background:"var(--bg, #0a0a0f)"}} aria-label="Chat input">
+        <label htmlFor="chat-input" className="sr-only">Message — type lookup Dune or score Inception as cozy</label>
+        <input id="chat-input" className="search-input" style={{flex:1}} value={input} onChange={e=>setInput(e.target.value)} placeholder="Ask for a film… or type 'lookup Dune' / 'score Dune as intense'" disabled={streaming} aria-label="Message" autoComplete="off" />
         {!streaming ? (
-          <button type="submit" className="btn-primary" disabled={!input.trim()} style={{minWidth:80}}>Send</button>
+          <button type="submit" className="btn-primary" disabled={!input.trim()} style={{minWidth:80}} aria-label="Send message">Send</button>
         ) : (
-          <button type="button" className="btn-ghost" onClick={stop} style={{minWidth:80, borderColor:"#ef4444", color:"#ef4444"}}>Stop</button>
+          <button type="button" className="btn-ghost" onClick={stop} style={{minWidth:80, borderColor:"#ef4444", color:"#ef4444"}} aria-label="Stop streaming response" autoFocus>Stop</button>
         )}
       </form>
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} } .pulse{ animation: pulse 1s infinite } @media (prefers-reduced-motion: reduce) { *{ animation:none !important; scroll-behavior:auto !important; } }`}</style>

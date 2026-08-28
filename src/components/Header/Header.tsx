@@ -25,23 +25,28 @@ export function Header({ query = "", setQuery, onSearch, onClear }: HeaderProps)
   return (
     <header className="header">
       <div className="header-inner">
-        <Link to="/" className="logo" onClick={onClear}>
-          <span className="logo-icon">◆</span> CINESCOPE
+        <Link to="/" className="logo" onClick={onClear} aria-label="CineScope home">
+          <span className="logo-icon" aria-hidden="true">◆</span> CINESCOPE
           <span className="logo-sub">Discover • Favourite • Watch</span>
         </Link>
 
-        <form className="search-form" onSubmit={handleSubmit}>
+        <form className="search-form" onSubmit={handleSubmit} role="search" aria-label="Movie search">
+          <label htmlFor="header-search" className="sr-only">Search movies</label>
           <input
+            id="header-search"
             className="search-input"
             placeholder="Search movies… (e.g. Inception, Batman)"
             value={query}
             onChange={e => setQuery?.(e.target.value)}
+            aria-label="Search movies"
+            autoComplete="off"
+            type="search"
           />
-          <button type="submit" className="btn-search">Search</button>
-          {query && <button type="button" className="btn-clear" onClick={() => { setQuery?.(""); onClear?.(); }}>✕</button>}
+          <button type="submit" className="btn-search" aria-label="Search">Search</button>
+          {query && <button type="button" className="btn-clear" onClick={() => { setQuery?.(""); onClear?.(); }} aria-label="Clear search">✕</button>}
         </form>
 
-        <nav className="nav">
+        <nav className="nav" aria-label="Primary">
           <Link to="/" className={location.pathname === "/" ? "nav-link active" : "nav-link"}>Home</Link>
           <Link to="/favourites" className={location.pathname === "/favourites" ? "nav-link active" : "nav-link"}>
             Favourites
@@ -57,13 +62,14 @@ export function Header({ query = "", setQuery, onSearch, onClear }: HeaderProps)
           )}
         </nav>
 
-        <button className="hamburger" onClick={() => setMobileSearch(v => !v)} aria-label="Toggle search">⌕</button>
+        <button className="hamburger" onClick={() => setMobileSearch(v => !v)} aria-label="Toggle search" aria-expanded={mobileSearch} aria-controls="mobile-search-form">⌕</button>
       </div>
 
       {mobileSearch && (
-        <form className="search-form-mobile" onSubmit={handleSubmit}>
-          <input className="search-input" placeholder="Search movies…" value={query} onChange={e => setQuery?.(e.target.value)} autoFocus />
-          <button type="submit" className="btn-search">Go</button>
+        <form id="mobile-search-form" className="search-form-mobile" onSubmit={handleSubmit} role="search" aria-label="Movie search mobile">
+          <label htmlFor="mobile-search" className="sr-only">Search movies</label>
+          <input id="mobile-search" className="search-input" placeholder="Search movies…" value={query} onChange={e => setQuery?.(e.target.value)} autoFocus aria-label="Search movies" type="search" />
+          <button type="submit" className="btn-search" aria-label="Search">Go</button>
         </form>
       )}
     </header>

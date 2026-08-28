@@ -60,8 +60,9 @@ function AppShell() {
 
   return (
     <>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <Header query={query} setQuery={setQuery} onSearch={handleSearch} onClear={handleClear} />
-      <main className="main">
+      <main id="main-content" className="main" tabIndex={-1}>
         <Routes>
           <Route path="/" element={<ErrorBoundary label="Home"><HomeViewWrapper headerQuery={query} headerSearchTrigger={searchTrigger} /></ErrorBoundary>} />
           <Route path="/favourites" element={<FavouritesView />} />

@@ -41,6 +41,7 @@ export function Header({ query = "", setQuery, onSearch, onClear }: HeaderProps)
             aria-label="Search movies"
             autoComplete="off"
             type="search"
+            maxLength={100}
           />
           <button type="submit" className="btn-search" aria-label="Search">Search</button>
           {query && <button type="button" className="btn-clear" onClick={() => { setQuery?.(""); onClear?.(); }} aria-label="Clear search">✕</button>}
@@ -68,7 +69,7 @@ export function Header({ query = "", setQuery, onSearch, onClear }: HeaderProps)
       {mobileSearch && (
         <form id="mobile-search-form" className="search-form-mobile" onSubmit={handleSubmit} role="search" aria-label="Movie search mobile">
           <label htmlFor="mobile-search" className="sr-only">Search movies</label>
-          <input id="mobile-search" className="search-input" placeholder="Search movies…" value={query} onChange={e => setQuery?.(e.target.value)} autoFocus aria-label="Search movies" type="search" />
+          <input id="mobile-search" className="search-input" placeholder="Search movies…" value={query} onChange={e => setQuery?.(e.target.value)} autoFocus aria-label="Search movies" type="search" maxLength={100} />
           <button type="submit" className="btn-search" aria-label="Search">Go</button>
         </form>
       )}

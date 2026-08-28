@@ -236,7 +236,7 @@ export function ChatView() {
 
       <form onSubmit={e => { e.preventDefault(); send(); }} style={{display:"flex", gap:8, padding:"10px 0", position:"sticky", bottom:0, background:"var(--bg, #0a0a0f)"}} aria-label="Chat input">
         <label htmlFor="chat-input" className="sr-only">Message — type lookup Dune or score Inception as cozy</label>
-        <input id="chat-input" className="search-input" style={{flex:1}} value={input} onChange={e=>setInput(e.target.value)} placeholder="Ask for a film… or type 'lookup Dune' / 'score Dune as intense'" disabled={streaming} aria-label="Message" autoComplete="off" />
+        <input id="chat-input" className="search-input" style={{flex:1}} value={input} onChange={e=>setInput(e.target.value)} placeholder="Ask for a film… or type 'lookup Dune' / 'score Dune as intense'" disabled={streaming} aria-label="Message" autoComplete="off" maxLength={2000} />
         {!streaming ? (
           <button type="submit" className="btn-primary" disabled={!input.trim()} style={{minWidth:80}} aria-label="Send message">Send</button>
         ) : (

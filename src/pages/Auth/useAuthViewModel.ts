@@ -10,6 +10,7 @@ export function useAuthViewModel() {
   const [success, setSuccess] = useState<string | null>(null);
 
   function toggleMode() {
+    if (loading) return;
     setMode(m => m === "login" ? "register" : "login");
     setError(null);
     setSuccess(null);
@@ -17,12 +18,17 @@ export function useAuthViewModel() {
 
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
+    if (loading) return;
+    const em = email.trim();
+    const pw = password;
+    if (!em || !pw) { setError("Email and password are required."); return; }
+    if (pw.length < 6) { setError("Password must be at least 6 characters."); return; }
     setError(null);
     setSuccess(null);
     setLoading(true);
     try {
-      if (mode === "login") await login(email, password);
-      else await register(email, password);
+      if (mode === "login") await login(em, pw);
+      else await register(em, pw);
       setSuccess(mode === "login" ? "Logged in!" : "Account created!");
       setPassword("");
     } catch (err) {

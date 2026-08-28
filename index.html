@@ -4,13 +4,35 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="CineScope — discover films you'll love. Search OMDb, save favourites per account, get AI picks, and chat with tools. Fast, MVVM, accessible." />
+    <meta name="description" content="CineScope — discover films you'll love. Search OMDb, save favourites per account, get AI picks and chat with tools. Fast, MVVM, accessible." />
     <meta name="theme-color" content="#08080c" />
+    <meta name="author" content="Aditya Dixit" />
+    <link rel="canonical" href="https://cinescope-phi-ebon.vercel.app/" />
     <link rel="preconnect" href="https://www.omdbapi.com" />
     <link rel="preconnect" href="https://raw.githubusercontent.com" />
+
+    <!-- Open Graph / Social preview -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://cinescope-phi-ebon.vercel.app/" />
+    <meta property="og:title" content="CineScope — Discover films you'll love" />
+    <meta property="og:description" content="Search OMDb, save favourites per account, get AI picks and chat with tools. Built with React 19 + MVVM + Firebase." />
+    <meta property="og:image" content="https://cinescope-phi-ebon.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="CineScope" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://cinescope-phi-ebon.vercel.app/" />
+    <meta name="twitter:title" content="CineScope — Discover films you'll love" />
+    <meta name="twitter:description" content="Search OMDb, save favourites per account, get AI picks and chat with tools." />
+    <meta name="twitter:image" content="https://cinescope-phi-ebon.vercel.app/og.png" />
+
     <title>CineScope — Discover films you'll love</title>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"CineScope","url":"https://cinescope-phi-ebon.vercel.app/","description":"Discover films you'll love — OMDb search + AI picks + favourites.","author":{"@type":"Person","name":"Aditya Dixit"}}</script>
   </head>
   <body>
+    <noscript><div style="max-width:600px;margin:40px auto;padding:16px;border:1px solid #23232f;border-radius:12px;background:#12121a;color:#f5f5f7;font-family:system-ui">CineScope needs JavaScript to search movies and stream chat. Please enable JavaScript — you can still browse the <a href="https://github.com/Aditya-dxt/cinescope" style="color:#06b6d4">GitHub repo</a> without it.</div></noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

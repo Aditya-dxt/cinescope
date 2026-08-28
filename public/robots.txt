@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://cinescope-phi-ebon.vercel.app/sitemap.xml

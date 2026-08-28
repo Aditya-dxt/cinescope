@@ -19,6 +19,8 @@ import { MotionView } from "./pages/Motion/MotionView";
 import { MakeItDoView } from "./pages/MakeItDo/MakeItDoView";
 import { OpenPhoneView } from "./pages/OpenPhone/OpenPhoneView";
 import { CritView } from "./pages/Crit/CritView";
+import { lazy, Suspense } from "react";
+const ThreeDView = lazy(() => import("./pages/ThreeD/ThreeDView").then(m => ({ default: m.ThreeDView })) );
 import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
 import { AiPanel } from "./components/AiPanel/AiPanel";
 import { useState, useEffect } from "react";
@@ -83,6 +85,8 @@ function AppShell() {
           <Route path="/make-it-do" element={<MakeItDoView />} />
           <Route path="/open-phone" element={<OpenPhoneView />} />
           <Route path="/crit" element={<CritView />} />
+          <Route path="/3d" element={<ErrorBoundary label="3D"><Suspense fallback={<div style={{padding:24,color:'#9a9ab0'}}>Loading 3D…</div>}><ThreeDView /></Suspense></ErrorBoundary>} />
+          <Route path="/viewer" element={<ErrorBoundary label="3D"><Suspense fallback={<div style={{padding:24,color:'#9a9ab0'}}>Loading 3D…</div>}><ThreeDView /></Suspense></ErrorBoundary>} />
           <Route path="/NOTES.md" element={<PlaygroundView />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

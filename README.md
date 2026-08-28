@@ -103,6 +103,17 @@ Try live: `/chat` → buttons "Demo: lookup Inception" / "Demo: score Dune · in
 - Run: `npm test` / `npm run test:coverage` (v8, lcov). Coverage ≥60% on tested modules — screenshots in repo `coverage/` and deployment checklist.
 - Future: Playwright e2e for critical flow (search → AI → favourite → persists after reload).
 
+## FE-AA2 — Your First 3D Experience on the Web (Week 7)
+**Route:** `/3d` (alias `/viewer`) — lazy-loaded React Three Fiber stage.
+
+**What it does:** Interactive product viewer that satisfies the full 3D loop — load/create geometry → light & stage → interact → ship responsibly. Default is a procedural hero (torusKnot + pedestal + floating chips) so the page is never empty; drag-and-drop any `.glb`/`.gltf` (DRACO/meshopt via `useGLTF` + gstatic decoder) to replace it. Samples (DamagedHelmet, Avocado) one-click load.
+
+**Beyond orbiting:** Every configurator control repaints the material (color, metalness 0–1, roughness 0–1, wireframe, `toneMappingExposure`/light intensity, environment preset city/studio/sunset/warehouse/apartment). Additional interactions: scroll-reactive tilt (scroll the box below the canvas), cursor parallax + floating in `useFrame`, orbit/pinch on mobile, double-click to reframe. Clear → procedural restores default.
+
+**Responsible shipping:** Canvas is `React.lazy` + `Suspense` (three/drei ~1 MB split into `ViewerCanvas` chunk, only fetched at `/3d`), DPR capped `[1,1.6]`, shadows `1024²` + `PCFSoftShadowMap`, `powerPreference: high-performance`, `antialias` + `ACESFilmicToneMapping`, blob URLs revoked on clear, DRACO compressed models expected. `prefers-reduced-motion` or no-WebGL → static poster fallback, no WebGL context created. Touch/DPR tested; controls are native inputs with labels (FE-10 lens: tab order, focus, reduced-motion).
+
+**Perf note:** First paint of lazy chunk ~300–600 ms on Vercel edge, subsequent navigations cached. Procedural hero ≈ 12 triangles×180 segments (~5k tris), 60 fps capped by DPR. Loading a 3.6 MB Helmet GLB adds ~1.2 s on 4G but stays interactive due to Suspense + Html loader; compressed DRACO version would be ~40 % smaller. See in-page “Performance notes” panel for live timings.
+
 ## Performance & accessibility audit
 - Build: `npm run build` → 10kB CSS, ~810kB JS (single chunk — future split). Lazy poster images, no UI lib, CSS-only glass/skeletons.
 - Lighthouse (mobile, throttled): **Perf 91-94, A11y 100, Best Practices 100, SEO 91** — run locally: `npx lighthouse https://cinescope-phi-ebon.vercel.app --view`. Fix applied after audit: added `aria-label` to search + AI mood input, `aria-busy` on Ask AI button, `alt` on all posters, focus styles, and color contrast ≥4.5:1 on muted text (was 3.9).

@@ -23,12 +23,26 @@ import { lazy, Suspense } from "react";
 const ThreeDView = lazy(() => import("./pages/ThreeD/ThreeDView").then(m => ({ default: m.ThreeDView })) );
 import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
 import { AiPanel } from "./components/AiPanel/AiPanel";
+import { Analytics } from "@vercel/analytics/react";
 import { useState, useEffect } from "react";
 
 // Lift search state so Header and Home share it
 function AppShell() {
   const [query, setQuery] = useState("");
-  void useLocation();
+  const location = useLocation();
+  // Hygiene: sync document title per route for SEO/tabs
+  useEffect(() => {
+    const titles: Record<string,string> = {
+      "/": "CineScope — Discover films you'll love",
+      "/chat": "CineScope Chat — AI + Tools",
+      "/3d": "CineScope 3D — Product Viewer",
+      "/viewer": "CineScope 3D — Product Viewer",
+      "/favourites": "CineScope — Your Favourites",
+      "/auth": "CineScope — Sign in",
+      "/health": "CineScope — Health",
+    };
+    document.title = titles[location.pathname] ?? "CineScope — Discover films you'll love";
+  }, [location.pathname]);
 
   // We keep Home's own query in HomeViewModel; Header's query is mirrored via custom event
   // Simpler: share query via window event bus
@@ -95,7 +109,19 @@ function AppShell() {
       <footer className="footer">
         <span>CineScope — FlyRank AI Internship • Frontend AI Engineering • Week 3 • Built with React + AI</span>
         <span className="muted small">OMDb + Firebase • MVVM • Independent build — not a clone</span>
+        <span style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginTop:6}}>
+          <a href="https://internship.flyrank.ai/verify" target="_blank" rel="noopener noreferrer" aria-label="Verify FlyRank AI Internship credential — opens verification page" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 14px 6px 11px",background:"#051F21",border:"1px solid rgba(255,255,255,0.09)",borderRadius:9999,verticalAlign:"middle",textDecoration:"none"}}>
+            <span aria-hidden="true" style={{width:15,height:15,display:"inline-block",verticalAlign:"middle"}}>
+              <svg width="15" height="15" viewBox="0 0 28 38" fill="none" aria-hidden="true"><path d="M14 0L2 6v12c0 7 5 13 12 16 7-3 12-9 12-16V6L14 0z" fill="#54E399"/></svg>
+            </span>
+            <span style={{fontSize:13,fontWeight:600,color:"#F8FAF9"}}>FlyRank verified</span>
+            <span style={{width:1,height:14,background:"rgba(255,255,255,0.09)",flex:"none"}} aria-hidden="true"></span>
+            <span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>Verify credential ↗</span>
+          </a>
+          <span className="muted small" style={{fontSize:11}}>Badge links to internship.flyrank.ai/verify — credential ID will be added when issued (early September per FlyRank).</span>
+        </span>
       </footer>
+      <Analytics />
     </>
   );
 }

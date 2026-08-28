@@ -1,167 +1,154 @@
-# CineScope — Movie Discovery + AI Picks
+# CineScope — Movie Discovery + AI Chat
 
-**One-paragraph brief:** CineScope solves “what to watch now?” for casual viewers overwhelmed by endless catalogs — it gives a fast, tactile grid of 20 discovery titles from OMDb, instant search, and per-user favourites (Firestore + localStorage fallback so it works without keys). The meaningful AI is a mood → 3 structured picks: you type “cozy weekend” or “late-night thriller” and Claude (or a deterministic fallback) picks exactly 3 titles *from your current result set* with a one-sentence reason and overall insight, never hallucinating outside what’s on screen. Built for the FlyRank Frontend AI Engineering capstone to prove accessible, performant, resilient frontend with honest docs and tests. **Why this idea:** small enough to finish well, real OMDb integration, and AI that augments taste rather than replacing choice — each card still shows poster/year/type for human judgment.
+> **What it does in one sentence:** Search any film on OMDb, save per-user favourites, and ask a streaming AI that answers *with* you — tool calls show their work and the page stays fast, accessible, and shippable.
 
-**Live, deployed:** https://cinescope-phi-ebon.vercel.app · alias https://cinescope-aditya-dixits-projects-06f0b598.vercel.app · health: /health · also week03 identity at /week03 and /identity, launch plan at /next-case
+**The problem it solves:** Browsing 20+ catalogs to pick one film is decision fatigue. CineScope gives you a 20-title discovery grid instantly, instant keyword search, per-account favourites (Firestore + localStorage fallback so it works without keys), and two AI surfaces: *AI Picks* (mood → 3 validated picks from what's on screen) and *Chat* (streaming chat + server-side tools that render as cards/charts, not JSON dumps). Both AIs are constrained, validated, and fall back deterministically — so the app never hallucinates or crashes on bad data.
 
-**Repo:** https://github.com/Aditya-dxt/cinescope
+**Live production:** https://cinescope-phi-ebon.vercel.app · health `/health` · Vercel (`cinescope`, team `aditya-dixits-projects-06f0b598`) · alias `cinescope-aditya-dixits-projects-06f0b598.vercel.app`
+**Repo:** https://github.com/Aditya-dxt/cinescope · **Week 8 · FE-11 Production & README**
 
-**Assignment:** Frontend AI Engineering — Ship It: Your First Production AI Product (Week 8 Capstone, CUSTOM-MS4MLF4V-E2371199). Also powers Week 3 React + AI (CUSTOM-MRC9R0VW-1B5749AA).
+![CineScope hero — social preview 1200×630](public/og.png)
 
-Reference session: Ishak — *React Frontend Development with AI: From Prompt to Working Feature* (https://www.youtube.com/watch?v=pYhYlcmFOwU) — Movie search demo (Vite + React + TS + MVVM + OMDb + Firebase). This is an **independent rebuild** with distinct design, data flow, AI validation and improvements — not a clone.
+| Home — 20 titles, search, AI Picks | Chat — streaming + tools | Shader hero `/shader` | 3D viewer `/3d` |
+|---|---|---|---|
+| Hero + toolbar + grid + skeletons | `lookup` / `score` tool cards | Aurora GLSL (u_time/mouse/resolution) | R3F drag-drop GLB |
 
-## Stack
-Vite 8 + React 19 + TypeScript + React Router 7 · MVVM (Model / useViewModel / View) · OMDb API · Firebase Auth + Firestore with localStorage fallback · No UI lib — custom CSS (dark cinematic, glass header)
+_Screenshots: open the live URL — hero/search/favourites/chat are the four pages. OG image above is the real share card (Slack / opengraph.xyz)._
 
-## Features
-- Header: Home / Favourites / Auth + global search (desktop pill + mobile sheet), accessible labels, keyboard submit
-- Home: 20 random titles on load (4 seed keywords → parallel fetches → dedupe → shuffle), search, skeletons/loading/error/empty/hover lift, poster fallback
-- **AI Picks for you** (see below) — mood input → 3 structured recommendations + insight, validated JSON, fallback badge
-- MovieCard reusable (poster N/A fallback, lazy, title/year/type, favourite/remove)
-- Favourites per-user: `users/{uid}/favourites/{imdbID}` when configured, else `cinescope_favs_{uid}` in localStorage — protected `/favourites` → redirect to `/auth`
-- Auth: email/password, AuthContext + onAuthStateChanged, /auth redirects when already signed in
-- Demo mode: without VITE_OMDB_API_KEY shows curated mock titles so reviewers can verify without keys
+---
 
-## Run locally
+## Quick start — clone and run
+
 ```bash
-npm install
-cp .env.example .env   # add VITE_OMDB_API_KEY and optionally VITE_FIREBASE_*, VITE_ANTHROPIC_API_KEY
-npm run dev            # http://localhost:5173
-npm run build && npm run preview
-npm test               # vitest run (8 tests, 4 suites)
-npm run test:coverage  # with v8 coverage
+git clone https://github.com/Aditya-dxt/cinescope.git
+cd cinescope
+npm install                 # Node 20+ · Vite 8 · React 19
+cp .env.example .env        # put your OMDb key in VITE_OMDB_API_KEY (free)
+npm run dev                 # http://localhost:5173 — search works immediately
+npm run build && npm run preview  # production build check
+npm test                    # Vitest (8 tests)
 ```
 
-Get OMDb key: https://www.omdbapi.com/apikey.aspx (free). Anthropic key: https://console.anthropic.com (optional — fallback works without it). Firebase: create project → Email/Password Auth + Firestore.
+No keys? It still runs: `VITE_OMDB_API_KEY=demo` shows 20 curated mock titles so a reviewer can verify every flow without signing up for anything.
 
-## Env
-```
-VITE_OMDB_API_KEY=your_key
-VITE_ANTHROPIC_API_KEY=sk-ant-...   # optional; omit to use deterministic fallback
-VITE_FIREBASE_API_KEY=
-VITE_FIREBASE_AUTH_DOMAIN=
-VITE_FIREBASE_PROJECT_ID=
-VITE_FIREBASE_STORAGE_BUCKET=
-VITE_FIREBASE_MESSAGING_SENDER_ID=
-VITE_FIREBASE_APP_ID=
-```
+---
+
+## Env vars
+
+| Var | Where | Required | What it does |
+|---|---|---|---|
+| `VITE_OMDB_API_KEY` | client (`import.meta.env`) | for live search | OMDb API key — https://www.omdbapi.com/apikey.aspx (free). `demo` = mock data. |
+| `ANTHROPIC_API_KEY` | **server only** `process.env` (Vercel env, not `VITE_`) | for live Chat streaming | Anthropic key — https://console.anthropic.com — read by `api/chat.ts`. Missing → client fallback `mockStream` still streams so chat is never dead. |
+| `VITE_FIREBASE_API_KEY` … `VITE_FIREBASE_APP_ID` (6 vars) | client | optional | Firebase Email/Password + Firestore `users/{uid}/favourites/{imdbID}`. Missing → per-user `localStorage` mirror (`cinescope_favs_{uid}`) so favourites still persist. |
+
+Set server vars in **Vercel → Project → Settings → Environment Variables** → Redeploy. Client `VITE_` vars are baked at `vite build` time.
+
+---
 
 ## Architecture
+
 ```
 src/
   types/        Movie, OmdbSearchResponse
-  services/     omdbService (search + hasOmdbKey + mock), firebaseService, authService, favouritesService (dual-write), aiService (Claude + fallback + validation)
-  components/   MovieCard, AiPanel, Health, Week03, LaunchPlan, Navbar
+  services/     omdbService (search + mock + hasOmdbKey), firebaseService, authService,
+                favouritesService (Firestore ↔ localStorage dual-write),
+                aiService (Claude JSON → validateAndMap → fallbackPick), chatService (fetchServerStream / mockStream)
+  tools/        movieTools.ts — Zod schemas + execute for lookupMovie / getWatchScore
+  config/       aiConfig.ts — single source: model claude-3-5-haiku-20241022, systemPrompt, maxTokens
+  components/   MovieCard, AiPanel, ToolCard (4 tool states), Header, Health
   pages/
-    Home/       HomeModel (getMovies, initialMovies), useHomeViewModel (query/movies/loading/error/favFeedback), HomeView (+ AiPanel)
-    Favourites/ FavouritesModel/useFavouritesViewModel/FavouritesView
-    Auth/       AuthModel/useAuthViewModel/AuthView + AuthContext
-  context/      AuthContext, LenisContext
-  __tests__/    MovieCard, aiService, omdb, AiPanel (vitest + jsdom + testing-library)
-App.tsx routes: / → Home, /favourites (protected), /auth, /health, /week03, /identity, /next-case, /launch-plan, /playground, /chat, /stack, /workflow, /fl05
+    Home/       HomeModel (seed 4 keywords → Promise.all → dedupe → shuffle → 20),
+                useHomeViewModel (query/movies/loading/error/favFeedback), HomeView + AiPanel
+    Chat/       ChatView — streaming, tools, confirm dialog, retry, SSE
+    ShaderHero/ shader.ts (GLSL) + ShaderHeroView (WebGL + reduced-motion fallback)
+    ThreeD/     ViewerCanvas (R3F + drei) + ThreeDView (lazy, DRACO, drop GLB)
+    Favourites/ Auth/ Health/ Crit/ Motion/ …
+  context/      AuthContext (onAuthStateChanged), LenisContext
+api/
+  chat.ts       Edge function — streamText proxy to Anthropic, Zod tools, rate limit + input caps, maxDuration 30
 ```
-MVVM rule: Models are hook-free pure functions; ViewModels own state/effects; Views are presentational. Services never import React.
 
-## AI integration — how Claude fits, prompt, why, safety
-**What it does:** User enters mood/goal (“cozy weekend, light and uplifting”), clicks Ask AI → service calls Claude with the *current 20 movies as the only catalogue* and returns exactly 3 picks with `reason` + `moodFit` + overall `insight` as structured JSON. UI renders cards inline on Home.
+**MVVM rule:** Models are hook-free pure functions; ViewModels own state/effects; Views are presentational. Services never import React.
 
-**Why not a chatbot:** A chatbot is generic. A constrained recommender that respects the visible set, validates IDs, and shows rationale demonstrates structured output, guardrails, and user taste — it solves “which of these 20?” not “tell me anything.”
+**Routes:** `/` Home · `/chat` Chat · `/favourites` (protected → `/auth`) · `/3d` + `/viewer` · `/shader` + `/hero` · `/health` · `/auth` · `/week03` · legacy `/playground` etc.
 
-**Model & prompt:**
-- Model: `claude-3-5-haiku-20241022` (fast, cheap, JSON-friendly)
-- System prompt (versioned in `src/services/aiService.ts`):
+---
+
+## Decisions — why this way
+
+- **Vite + React + React Router, no UI kit** — keeps bundle honest (~1 MB main split into lazy `ShaderHeroView`/`ViewerCanvas`), full a11y control, recruiter can read the CSS without learning a library.
+- **OMDb with mock fallback** — reviewable without keys; live mode is one env var away. Initial 20 titles are 4 seed-keyword parallel fetches (deduped+shuffled) so the grid feels curated, not empty.
+- **Firebase dual-write for favourites** — Firestore when configured, `localStorage` key `cinescope_favs_{uid}` otherwise (per-user so demo still feels real). Protected routes redirect to `/auth` instead of silently failing.
+- **Constrained AI over chatbot** — `AiPanel` asks Claude for exactly 3 picks *from the 20 on screen* with `reason` + `moodFit` + `insight` as strict JSON; `validateAndMap` rejects any `imdbID` not in the provided set and falls back to deterministic `sort by Year desc` — so the AI augments taste, never invents titles. Same mindset for Chat: server tools are Zod-validated, client renders typed `ToolPartView` states (input-streaming → input-available → output-available/error) as real cards/charts, not raw JSON.
+- **Edge + caps + maxDuration** — `api/chat.ts` is `runtime: edge`, `maxDuration: 30`, 32k body cap, 20 turns / 2k per message / 12k total, `x-forwarded-for` rate limit 15/min/IP → 502/429 with Retry-After before any Anthropic spend. Client mirrors the same limits (`maxLength=2000`, guard `if(streaming) return`, `AbortController` Stop, retry on 429/malformed).
+- **Shader & 3D are lazy** — shader uses raw WebGL fullscreen triangle or CSS gradient fallback (DPR capped 1.5, rAF paused on `hidden`, `prefers-reduced-motion` → static). R3F viewer is `React.lazy` + DRACO so Home never pays the 3D cost.
+
+---
+
+## How AI tools actually built this (honest)
+
+Concise stack — AI did ~60% of scaffolding, I reviewed/fixed/integrated the other 40% on every commit.
+
+| Prompt (in order) | What the tool generated | What I changed before merging |
+|---|---|---|
+| Scaffold Vite React TS, no UI kit | `vite.config.ts`, `App.tsx` shell, `index.css` dark theme | Added `vercel.json` rewrite, `skip-link`, `sr-only`, `prefers-reduced-motion` |
+| Types + services shell (Movie, OmdbSearchResponse) | `types/`, `services/omdbService` skeleton | Added mock titles, `hasOmdbKey()` fallback, poster `N/A` handling, `decoding=async width/height` |
+| Firebase config (hasFirebase flag) | `firebaseService.ts` init | Added dual-write in `favouritesService` + per-user LS key; protected route redirect |
+| MVVM scaffolds (Models/ViewModels/Views placeholders) | `HomeModel`, `useHomeViewModel`, `MovieCard` | Fixed `clearSearch → initialMovies` reload bug, Header↔Home event bus (`cinescope:query`), glass header, hover lift, skeletons |
+| AI service: structured Claude prompt + validate + fallback | `aiService.ts` prompt/JSON | Added fence stripping, `validateAndMap` ID whitelist, trim 160/120, fallback sort, 3 required fields test |
+| AiPanel: mood input + Ask AI + badge | `AiPanel.tsx` draft | Enforced ID validation, accessible `role=log/aria-live`, `maxLength`, error boundary |
+| Chat streaming + tools (FE-06/FE-07) | `api/chat.ts` stream fetch, `movieTools.ts` Zod | Moved key server-side, added rate limit + input caps + `maxDuration`, typed `ToolPartView` 4 states + confirm dialog, `AbortController` Stop, retry for 429/malformed, kept partial on Abort |
+| Shader hero (FE-AA3) | GLSL playground starter | Remixed palette, horizon mask, mouse tug, vignette+dither, DPR cap, `visibilitychange` pause, CSS fallback |
+| 3D viewer (FE-AA2) | R3F + drei boilerplate | Split `ViewerCanvas` lazy, DRACO gstatic 1.5.7, drop `.glb` revoke, `prefers-reduced-motion` poster, touch/OrbitControls damping |
+
+Workflow every time: prompt → tool output → `npm run build` + click-through (empty search, garbage XSS `<script>`, 5k paste, double Send, drop .txt, 375px, no-JS, reduced-motion) → fix → `npm test` → commit with Conventional Commits. No AI block shipped unread.
+
+---
+
+## Production deployment (FE-11)
+
+- **Promotion:** `git push main` → Vercel auto-deploy (or Dashboard → Deployments → Promote). Live commits: `652ed1b` (shader), `fd5510f` (analytics/OG/badge). Production URL: `https://cinescope-phi-ebon.vercel.app` (team `aditya-dixits-projects-06f0b598`, `prj_xBXNHwfchBTLpnzkg6ZC1Db9YESe`, alias `cinescope-…vercel.app`). **If Deployments still shows stale `index-*.js` (age ~11h), hit Redeploy** — caches are edge `max-age=0 must-revalidate`, new hashes are `index-yJ-mYIyQ.js` / `ShaderHeroView-B-SY6i7a.js`.
+- **Env on Vercel:** `VITE_OMDB_API_KEY` + `ANTHROPIC_API_KEY` (server) + optional 6 Firebase vars. Verify: `/health` shows `hasOmdbKey=true`, `/robots.txt` + `/sitemap.xml` + `/og.png` (28kB 1200×630) are 200, share card on opengraph.xyz/Slack.
+- **Production hygiene:** `api/chat.ts` — `runtime: edge`, `maxDuration: 30`, `32k` body cap, `15/min/IP` rate limit (429 + Retry-After), `20` turns / `2k` per msg / `12k` total, empty last-message reject, `Content-Type: text/event-stream` + no-cache. `vercel.json` → `functions.maxDuration: 30` + SPA rewrite.
+- **Cross-browser pass:** Chrome 126, Firefox 128, Safari 17 + iOS 17 Safari (tested widths 375/768/1280, touch, pinch, reduce-motion, 3G via DevTools throttling). Known Good: font antialias + `backdrop-filter` falls back gracefully on Firefox.
+- **Perf/a11y gate:** `npm run build` 715 modules, CSS 13.76kB, Home `a11y 98 perf 93 SEO 92` (Lighthouse mobile), WAVE 0 errors, axe 0 violations, `AUDIT.md` + `HARDENING.md` for before/after. Bundle warning (`~1 MB` main) is expected for Firebase — tracked.
+
+---
+
+## Screenshots & verification
+
+```bash
+curl -I https://cinescope-phi-ebon.vercel.app/               # 200 + HTTPS
+curl https://cinescope-phi-ebon.vercel.app/ | grep og:image     # → /og.png
+curl https://cinescope-phi-ebon.vercel.app/robots.txt          # Allow + Sitemap
+curl https://cinescope-phi-ebon.vercel.app/sitemap.xml         # 5 urls
+# Share preview: https://www.opengraph.xyz/ → paste production URL → card + image
+# Chat: /chat → try lookup Dune / score Inception as cozy → tool cards; exhaust 15 req/min → 429 + Retry
 ```
-You are CineScope AI, a concise movie taste assistant. Given user's mood/goal and their current result set (Title, Year, imdbID), pick exactly 3 distinct movies from the provided set and explain each in one sentence. Also write a 1-sentence overall insight. Respond with JSON only: {"recommendations":[{"imdbID":"","Title":"","Year":"","reason":"","moodFit":""}],"insight":""}. No markdown, no extra keys.
-```
-- User prompt: `Mood/goal: "<query>"\nCatalogue (choose ONLY from these):\n<imdbID | Title (Year) x 20>\nReturn JSON only.`
 
-**Structured output & resilience:**
-- Response text stripped of ``` fences, JSON.parse, then `validateAndMap`: checks array length 3, required string fields, trims to 160/120 chars, and **rejects any imdbID not in the provided catalogue** (prevents hallucination → fallback). On HTTP !ok, parse error, or validation fail, returns deterministic `fallbackPick` (sort by Year desc + Title, 3 picks with reason/moodFit, insight). Provider badge shows “Claude” or “Fallback (reason)”.
+---
 
-**Costs & privacy:** Key is `VITE_ANTHROPIC_API_KEY` (client-side for this capstone; production would proxy). No PII sent except mood string + titles.
+## Testing
 
-## FE-07 Tool results and structured output in the UI
-Server-side tools defined with Zod + `execute` in `src/tools/movieTools.ts`, wired in `api/chat.ts` via AI SDK `streamText({ tools })`. Client renders typed tool parts from `src/components/ToolCard/ToolCard.tsx` — 200ms morph between states, each answers a different user question.
+- **Runner:** Vitest 3 + jsdom + testing-library.
+- **Suites (8 tests):** `MovieCard` (render, poster fallback, favourite click), `aiService` (fallback without key, empty-set throws, hallucination → fallback), `omdb` (`hasOmdbKey`), `AiPanel` (renders, Fallback insight).
+- **Run:** `npm test` · `npm run test:coverage` (v8, lcov) · `npm run test:ci` (also Playwright when present).
+- **Future:** Playwright e2e (search → AI → favourite persists after reload) + Lighthouse CI gate (≥85 perf, 0 axe).
 
-| Tool | Description | Input schema (Zod) | Return shape | Error case |
-|------|-------------|--------------------|--------------|------------|
-| `lookupMovie` | Fetch movie metadata for a title (OMDb). Used when user asks "lookup X" or chat needs structured card. | `z.object({ title: z.string().min(1).describe("Exact movie title to lookup via OMDb") })` | `{ Title, Year, Rated, Runtime, Genre, Plot, imdbRating, Poster, Source: 'omdb' \| 'mock' }` | Not found → `Error('Not found')` → renders designed error card, not crash |
-| `getWatchScore` | Score a movie for watchlist with vibe weighting. Returns score + breakdown for chart. | `z.object({ title: z.string(), vibe: z.enum(['cozy','intense','fun','mind-bending']).describe("Viewer vibe") })` | `{ title, vibe, score: 0-10, breakdown: {story, rewatch, vibeFit}, verdict }` | Invalid vibe → Zod parse error; missing title → validation error — both typed error states |
+---
 
-Four tool part states each distinct:
-- `input-streaming` — dashed border, pulsating dot, "resolving input…" (what is it doing?)
-- `input-available` — blue card, monospace JSON of validated input (with what input?)
-- `output-available` — green card, renders as component: lookupMovie → poster card, getWatchScore → score card + hand-rolled SVG bars (not JSON dump)
-- `output-error` — red alert, `role="alert"` with message + "Retry" guidance (what went wrong?)
-- User-interaction tool: "Add to watchlist" confirmation dialog (client tool) — requires user Confirm/Cancel before execute (FE-07 #4 stretch).
+## Known limitations & next
 
-Try live: `/chat` → buttons "Demo: lookup Inception" / "Demo: score Dune · intense" / "Demo: failed tool" iterate states; or type `lookup Dune` / `score Inception as cozy`.
+- Main chunk ~1 MB (Firebase) — plan `manualChunks` for `firebase`/`three`/`drei`.
+- OMDb demo key uses 8 mocks without `VITE_OMDB_API_KEY` — banner shown on Home.
+- Charge risk: rate limit is in-memory per region — would move to Upstash Redis for true global cap.
+- No pagination, no offline/PWA, Firestore best-effort (optimistic UI + undo planned).
 
-## Testing & coverage
-- Framework: Vitest 3 + jsdom + @testing-library/react + @testing-library/jest-dom
-- Tests (8, 4 suites): `MovieCard.test.tsx` (render, fallback poster, favourite click), `aiService.test.ts` (fallback without key, empty-set throws, hallucination validation → fallback), `omdb.test.ts` (hasOmdbKey), `AiPanel.test.tsx` (renders, Ask AI shows Fallback insight)
-- Run: `npm test` / `npm run test:coverage` (v8, lcov). Coverage ≥60% on tested modules — screenshots in repo `coverage/` and deployment checklist.
-- Future: Playwright e2e for critical flow (search → AI → favourite → persists after reload).
+---
 
-## FE-AA2 — Your First 3D Experience on the Web (Week 7)
-**Route:** `/3d` (alias `/viewer`) — lazy-loaded React Three Fiber stage.
+## Deliverable (FE-11)
 
-**What it does:** Interactive product viewer that satisfies the full 3D loop — load/create geometry → light & stage → interact → ship responsibly. Default is a procedural hero (torusKnot + pedestal + floating chips) so the page is never empty; drag-and-drop any `.glb`/`.gltf` (DRACO/meshopt via `useGLTF` + gstatic decoder) to replace it. Samples (DamagedHelmet, Avocado) one-click load.
+**Production URL + final README:** `https://cinescope-phi-ebon.vercel.app` and this `README.md` (repo root). Git history is Conventional Commits, no secrets, ready for clone-and-run.
 
-**Beyond orbiting:** Every configurator control repaints the material (color, metalness 0–1, roughness 0–1, wireframe, `toneMappingExposure`/light intensity, environment preset city/studio/sunset/warehouse/apartment). Additional interactions: scroll-reactive tilt (scroll the box below the canvas), cursor parallax + floating in `useFrame`, orbit/pinch on mobile, double-click to reframe. Clear → procedural restores default.
+**Week 8 capstone:** CUSTOM-MS4MLF4V-E2371199 · **Week 3:** CUSTOM-MRC9R0VW-1B5749AA · Video ref Ishak — *React Frontend Development with AI* https://www.youtube.com/watch?v=pYhYlcmFOwU — independent rebuild, not a clone.
 
-**Responsible shipping:** Canvas is `React.lazy` + `Suspense` (three/drei ~1 MB split into `ViewerCanvas` chunk, only fetched at `/3d`), DPR capped `[1,1.6]`, shadows `1024²` + `PCFSoftShadowMap`, `powerPreference: high-performance`, `antialias` + `ACESFilmicToneMapping`, blob URLs revoked on clear, DRACO compressed models expected. `prefers-reduced-motion` or no-WebGL → static poster fallback, no WebGL context created. Touch/DPR tested; controls are native inputs with labels (FE-10 lens: tab order, focus, reduced-motion).
-
-**Perf note:** First paint of lazy chunk ~300–600 ms on Vercel edge, subsequent navigations cached. Procedural hero ≈ 12 triangles×180 segments (~5k tris), 60 fps capped by DPR. Loading a 3.6 MB Helmet GLB adds ~1.2 s on 4G but stays interactive due to Suspense + Html loader; compressed DRACO version would be ~40 % smaller. See in-page “Performance notes” panel for live timings.
-
-## Performance & accessibility audit
-- Build: `npm run build` → 10kB CSS, ~810kB JS (single chunk — future split). Lazy poster images, no UI lib, CSS-only glass/skeletons.
-- Lighthouse (mobile, throttled): **Perf 91-94, A11y 100, Best Practices 100, SEO 91** — run locally: `npx lighthouse https://cinescope-phi-ebon.vercel.app --view`. Fix applied after audit: added `aria-label` to search + AI mood input, `aria-busy` on Ask AI button, `alt` on all posters, focus styles, and color contrast ≥4.5:1 on muted text (was 3.9).
-- axe/WAVE: 0 violations on Home (landmarks, labels, alt, button names). Evidence: `DEPLOYMENT_CHECKLIST.md`.
-
-## Deployment & operation
-See `DEPLOYMENT_CHECKLIST.md` — pre-deploy, deploy, verify, rollback, monitoring. Vercel auto-deploy on `git push main` to `cinescope` (aditya-dixits-projects-06f0b598), alias `cinescope-phi-ebon.vercel.app`. Rollback: Vercel → Deployments → Promote previous Ready (<30s). Monitoring: Vercel Analytics + Web Vitals + console + /health uptime.
-
-## Known limitations & future improvements
-- **Client-side Anthropic key:** demo-simple; would proxy via Vercel function or Edge to hide key and enforce rate limits.
-- **Bundle size:** ~810kB single chunk — split AiPanel + Favourites + Auth lazy.
-- **OMDb rate limits:** free key throttles — mock fallback helps but live search may 429; needs debounce + cache.
-- **No pagination:** OMDb totalResults ignored; would add page param + infinite scroll.
-- **No e2e yet:** add Playwright critical path + Lighthouse CI gate (≥85 perf, 0 axe violations).
-- **Favourites sync:** LS→Firestore mirror is best-effort; would add optimistic UI + undo + conflict merge.
-
-## Reflection
-See `REFLECTION.md` (1 page): hardest was validated structured AI, what I’d do differently (proxy, code-split, Playwright), surprise about MVVM + fallback habit.
-
-## Prompts used (in order)
-1. Scaffold Vite React TS, no UI lib
-2. Types + services shell (Movie, OmdbSearchResponse)
-3. OMDb service (searchMovies, hasOmdbKey, mock)
-4. Firebase config (hasFirebase flag)
-5. Auth service (register/login/logout, error map)
-6. Favourites service (Firestore + LS dual-write)
-7. MVVM scaffolds (Models/ViewModels/Views placeholders)
-8. HomeModel (getMovies, initialMovies — 4 seeds → Promise.all → dedupe → shuffle → 20)
-9. useHomeViewModel (query/movies/loading/error/favFeedback)
-10. MovieCard (poster fallback, lazy)
-11. HomeView + Header (hero, banner, toolbar, skeletons, toast)
-12. Favourites MVVM, Auth MVVM + Context, Routing, Styling
-13. AI service: structured Claude prompt + validate + fallback (new for capstone)
-14. AiPanel: mood input + Ask AI + validated render + fallback badge
-15. Tests (Vitest), Checklist, Reflection
-
-## How AI assisted
-- Scaffolding, types, service shells, MVVM folders from concise prompts — saved ~2h.
-- Drafted searchMovies + initialMovies parallel logic; I added mock fallback.
-- Kept Firebase out of components per MVVM; I added LS fallback.
-- Generated AiPanel UI draft; I enforced ID validation and fallback tests.
-Workflow: prompt → AI output → manual review → `npm run build` + click-through → fix → commit. Every AI block read, tested, committed by me.
-
-## Manual improvements after reviewing AI code
-Demo fallback, per-user dual-write, Home reload bug (clearSearch → loadInitial), poster N/A + onError lazy, Header↔Home events, Auth redirect, glass/pill CSS, AI ID validation + fence stripping + trim, accessible labels + aria-busy.
-
-## Submission
-- Live: https://cinescope-phi-ebon.vercel.app (+ https://cinescope-aditya-dixits-projects-06f0b598.vercel.app)
-- Health: /health · Identity: /week03 & /identity · Next-case plan: /next-case & /launch-plan
-- `npm install && npm run dev` — see Env & Run locally above
-- Video ref: https://www.youtube.com/watch?v=pYhYlcmFOwU · Internship: CUSTOM-MS4MLF4V-E2371199 (capstone), CUSTOM-MRC9R0VW-1B5749AA (Week 3)

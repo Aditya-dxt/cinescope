@@ -21,6 +21,7 @@ import { OpenPhoneView } from "./pages/OpenPhone/OpenPhoneView";
 import { CritView } from "./pages/Crit/CritView";
 import { lazy, Suspense } from "react";
 const ThreeDView = lazy(() => import("./pages/ThreeD/ThreeDView").then(m => ({ default: m.ThreeDView })) );
+const ShaderHeroView = lazy(() => import("./pages/ShaderHero/ShaderHeroView").then(m => ({ default: m.ShaderHeroView })) );
 import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
 import { AiPanel } from "./components/AiPanel/AiPanel";
 import { Analytics } from "@vercel/analytics/react";
@@ -37,6 +38,8 @@ function AppShell() {
       "/chat": "CineScope Chat — AI + Tools",
       "/3d": "CineScope 3D — Product Viewer",
       "/viewer": "CineScope 3D — Product Viewer",
+      "/shader": "CineScope — Aurora Shader Hero",
+      "/hero": "CineScope — Aurora Shader Hero",
       "/favourites": "CineScope — Your Favourites",
       "/auth": "CineScope — Sign in",
       "/health": "CineScope — Health",
@@ -102,6 +105,8 @@ function AppShell() {
           <Route path="/crit" element={<CritView />} />
           <Route path="/3d" element={<ErrorBoundary label="3D"><Suspense fallback={<div style={{padding:24,color:'#9a9ab0'}}>Loading 3D…</div>}><ThreeDView /></Suspense></ErrorBoundary>} />
           <Route path="/viewer" element={<ErrorBoundary label="3D"><Suspense fallback={<div style={{padding:24,color:'#9a9ab0'}}>Loading 3D…</div>}><ThreeDView /></Suspense></ErrorBoundary>} />
+          <Route path="/shader" element={<ErrorBoundary label="Shader"><Suspense fallback={<div style={{padding:24,color:'#9a9ab0'}}>Loading shader…</div>}><ShaderHeroView /></Suspense></ErrorBoundary>} />
+          <Route path="/hero" element={<ErrorBoundary label="Shader"><Suspense fallback={<div style={{padding:24,color:'#9a9ab0'}}>Loading shader…</div>}><ShaderHeroView /></Suspense></ErrorBoundary>} />
           <Route path="/NOTES.md" element={<PlaygroundView />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

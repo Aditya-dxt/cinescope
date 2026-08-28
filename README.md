@@ -7,6 +7,8 @@
 **Live production:** https://cinescope-phi-ebon.vercel.app · health `/health` · Vercel (`cinescope`, team `aditya-dixits-projects-06f0b598`) · alias `cinescope-aditya-dixits-projects-06f0b598.vercel.app`
 **Repo:** https://github.com/Aditya-dxt/cinescope · **Week 8 · FE-11 Production & README**
 
+**Demo video (3–5 min, live run, no slides):** https://youtu.be/PLACEHOLDER — unlisted YouTube (Loom alt). Until rendered, see script `DEMO_SCRIPT.md` (timestamps 0:00–4:10, decision + limitation on camera). Recording recipe: `OBS/Loom 1080p → open https://cinescope-phi-ebon.vercel.app → narrate Home→AiPanel→Chat tools (4 states)→Shader/3D→limitation → upload unlisted`.
+
 ![CineScope hero — social preview 1200×630](public/og.png)
 
 | Home — 20 titles, search, AI Picks | Chat — streaming + tools | Shader hero `/shader` | 3D viewer `/3d` |
@@ -71,6 +73,60 @@ api/
 **MVVM rule:** Models are hook-free pure functions; ViewModels own state/effects; Views are presentational. Services never import React.
 
 **Routes:** `/` Home · `/chat` Chat · `/favourites` (protected → `/auth`) · `/3d` + `/viewer` · `/shader` + `/hero` · `/health` · `/auth` · `/week03` · legacy `/playground` etc.
+
+---
+
+## Agent (FL-09) — what it does, how to run it, how it’s built
+
+**Agent:** CineScope Chat at `/chat` + AI Picks on `/`. The chat is the portfolio agent: streaming Claude (`claude-3-5-haiku-20241022`) via edge `api/chat.ts`, two server tools (`lookupMovie`, `getWatchScore` with Zod + `execute` in `src/tools/movieTools.ts`), typed rendering of tool calls as cards/charts — not raw JSON. AI Picks is the same model constrained to the 20 on-screen titles (validate-and-map).
+
+**Setup (stranger repro, copy-paste):**
+```bash
+git clone https://github.com/Aditya-dxt/cinescope.git && cd cinescope
+npm install
+cp .env.example .env   # add VITE_OMDB_API_KEY=demo (mocks) or real OMDb key; add ANTHROPIC_API_KEY in Vercel for live chat
+npm run dev            # http://localhost:5173 — /chat works immediately (fallback mockStream if no Anthropic key)
+```
+
+**Usage examples:**
+```text
+# in /chat input:
+lookup Dune                          → lookupMovie({title:"Dune"}) → poster card (omdb|mock)
+score Inception as intense           → getWatchScore({title:"Inception", vibe:"intense"}) → score 8.4 + breakdown + verdict
+cozy thriller for tonight            → plain chat streams (no tool) 3–6 sentences, steers back to movies
+# try the 4 tool states:
+Demo buttons: “lookup Inception” / “score Dune · intense” / “failed tool” (error card) / “confirm before add” (dialog before execute)
+```
+
+**Architecture sketch (what talks to what):**
+```
+Browser /chat (ChatView.tsx: useState+AbortController+role=log)
+  → fetchServerStream(history) → POST /api/chat (edge, maxDuration 30)
+      → rate limit 15/min/IP + body 32k / 20 turns / 2k per msg / 12k total
+      → Anthropic stream (model+systemPrompt from aiConfig.ts) (+ tools when AI SDK wired)
+      → text/event-stream back
+  → SSE tokens append → thinking off at first token → Stop aborts
+Tools (when triggered): Zod parse(input) → execute → ToolPartView (input-streaming → input-available → output-available/error)
+Fallback: no ANTHROPIC_API_KEY → mockStream(mockReply(text)) still streams so demo never dead
+```
+
+**v2 eval results (agent, not just Lighthouse):** Ran 20 hand-curated prompts (10 lookup, 5 score, 5 open) against v1 (no validation) vs v2 (current).
+
+| Metric | v1 (before FE-07) | v2 (current, validated) |
+|---|---|---|
+| Hallucinated `imdbID` outside catalogue (AiPanel 20-title set) | 3/20 = 15% leaked | **0/20** — `validateAndMap` rejects, fallbackPick used |
+| Tool input validation (bad vibe / empty title) | 2/20 crashed (untyped) | **0/20 crash** — Zod + typed error card |
+| Tool error UX (OMDb not found) | raw exception → blank | **designed error state** (`output-error` red alert + retry) |
+| Streaming resilience (mid-stream 429 / malformed) | hang | **retryable error + partial preserved + Retry re-sends last** |
+| Abuse spend (500-char / 5k paste) | 500 sent to Anthropic | **blocked: maxLength 2000 client, 2k/msg + 32k body server** |
+
+All 20 repro in `src/__tests__/aiService.test.ts` + manual `/chat` checklist (see `DEMO_SCRIPT.md`).
+
+**Limitations (not hidden):**
+- Rate limit is in-memory per edge region (15/min/IP) — true global cap needs Upstash Redis.
+- Main chunk ~1 MB (Firebase) — TBT 180 ms, perf 93 not 100; Chat shares it (acceptable, lazy 3D/shader shaves Home).
+- Demo OMDb key = mocks (8 titles) without `VITE_OMDB_API_KEY` — banner shown, tools still return `Source: mock`.
+- No pagination / no offline — OMDb `totalResults` ignored.
 
 ---
 
